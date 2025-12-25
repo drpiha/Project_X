@@ -1,0 +1,39 @@
+{
+    "campaign_id": "550e8400-e29b-41d4-a716-446655440000",
+    "language": "tr",
+    "topic_summary": "Çevre koruma ve sürdürülebilirlik hakkında farkındalık oluşturma",
+    "hashtags": [
+        "#ÇevreBilinci",
+        "#DoğayıKoru",
+        "#YeşilGelecek"
+    ],
+    "tone": "hopeful",
+    "call_to_action": "Bugün harekete geç!",
+    "constraints": {
+        "max_chars": 280,
+        "target_chars": 268,
+        "include_emojis": true,
+        "emoji_density": "low"
+    },
+    "assets": {
+        "image_count": 2,
+        "video_present": false,
+        "image_context": "Yeşil orman ve temiz su"
+    },
+    "anti_repeat": {
+        "avoid_phrases": [
+            "gerçekten önemli",
+            "hepimiz biliyoruz"
+        ],
+        "rotate_angles": [
+            "human_story",
+            "facts",
+            "solution",
+            "international_awareness",
+            "solidarity"
+        ]
+    },
+    "output": {
+        "variants": 6
+    }
+}

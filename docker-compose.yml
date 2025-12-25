@@ -1,0 +1,64 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: campaign_db
+    environment:
+      POSTGRES_USER: campaign_user
+      POSTGRES_PASSWORD: campaign_pass
+      POSTGRES_DB: campaign_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U campaign_user -d campaign_db" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: campaign_backend
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://campaign_user:campaign_pass@db:5432/campaign_db
+      - MEDIA_STORAGE_PATH=/app/media
+      - FEATURE_X_POSTING=${FEATURE_X_POSTING:-false}
+      - X_CLIENT_ID=${X_CLIENT_ID:-mock_client_id}
+      - X_CLIENT_SECRET=${X_CLIENT_SECRET:-mock_client_secret}
+      - X_REDIRECT_URI=${X_REDIRECT_URI:-http://localhost:8000/v1/x/oauth/callback}
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - media_data:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  scheduler:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: campaign_scheduler
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://campaign_user:campaign_pass@db:5432/campaign_db
+      - MEDIA_STORAGE_PATH=/app/media
+      - FEATURE_X_POSTING=${FEATURE_X_POSTING:-false}
+      - X_CLIENT_ID=${X_CLIENT_ID:-mock_client_id}
+      - X_CLIENT_SECRET=${X_CLIENT_SECRET:-mock_client_secret}
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
+    volumes:
+      - ./backend:/app
+      - media_data:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+    command: python -m worker.scheduler
+
+volumes:
+  postgres_data:
+  media_data:

@@ -1,0 +1,66 @@
+{
+    "campaign_id": "550e8400-e29b-41d4-a716-446655440000",
+    "language": "tr",
+    "variants": [
+        {
+            "variant_index": 0,
+            "text": "🌟 Çevre koruma ve sürdürülebilirlik hakkında düşündükçe, insan hikayelerinin gücünü görüyoruz. Bugün harekete geç! #ÇevreBilinci #DoğayıKoru",
+            "char_count": 156,
+            "hashtags_used": [
+                "#ÇevreBilinci",
+                "#DoğayıKoru"
+            ],
+            "safety_notes": []
+        },
+        {
+            "variant_index": 1,
+            "text": "📊 Çevre koruma ve sürdürülebilirlik konusunda bilmeniz gereken gerçekler var. Araştırmalar önemli sonuçlar ortaya koyuyor. Bugün harekete geç! #YeşilGelecek",
+            "char_count": 168,
+            "hashtags_used": [
+                "#YeşilGelecek"
+            ],
+            "safety_notes": []
+        },
+        {
+            "variant_index": 2,
+            "text": "💪 Çevre koruma ve sürdürülebilirlik için somut çözümler üretebiliriz. Birlikte değişim yaratabiliriz. Bugün harekete geç! #ÇevreBilinci #DoğayıKoru",
+            "char_count": 162,
+            "hashtags_used": [
+                "#ÇevreBilinci",
+                "#DoğayıKoru"
+            ],
+            "safety_notes": []
+        },
+        {
+            "variant_index": 3,
+            "text": "🌍 Dünya genelinde çevre koruma ve sürdürülebilirlik konusu giderek daha fazla gündemde. Bugün harekete geç! #YeşilGelecek",
+            "char_count": 134,
+            "hashtags_used": [
+                "#YeşilGelecek"
+            ],
+            "safety_notes": []
+        },
+        {
+            "variant_index": 4,
+            "text": "❤️ Çevre koruma ve sürdürülebilirlik konusunda dayanışma şart. Birlik ve beraberlikle ses çıkarıyoruz. Bugün harekete geç! #ÇevreBilinci",
+            "char_count": 149,
+            "hashtags_used": [
+                "#ÇevreBilinci"
+            ],
+            "safety_notes": []
+        },
+        {
+            "variant_index": 5,
+            "text": "✨ Her birimizin çevre koruma ve sürdürülebilirlik konusunda bir hikayesi var. Gerçek deneyimler bize ilham veriyor. #DoğayıKoru #YeşilGelecek",
+            "char_count": 155,
+            "hashtags_used": [
+                "#DoğayıKoru",
+                "#YeşilGelecek"
+            ],
+            "safety_notes": []
+        }
+    ],
+    "best_variant_index": 0,
+    "recommended_alt_text": "Görsel: Yeşil orman ve temiz su. Sosyal medya kampanyası için hazırlanmış içerik.",
+    "generator": "rule_based_v1"
+}

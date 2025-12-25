@@ -1,0 +1,97 @@
+{
+  "@@locale": "tr",
+  "appTitle": "Kampanya Yöneticisi",
+  "@appTitle": {
+    "description": "The app title"
+  },
+  "welcome": "Hoş Geldiniz",
+  "welcomeSubtitle": "Sosyal medya kampanyalarınızı kolayca yönetin",
+  "connectWithX": "X ile Bağlan",
+  "skipAndContinue": "Atla ve Devam Et",
+  "campaigns": "Kampanyalar",
+  "createCampaign": "Kampanya Oluştur",
+  "noCampaigns": "Henüz kampanya yok",
+  "createFirstCampaign": "İlk kampanyanızı oluşturun",
+  "campaignTitle": "Kampanya Başlığı",
+  "campaignDescription": "Açıklama",
+  "campaignDescriptionHint": "Kampanyanızı kısaca açıklayın...",
+  "language": "Dil",
+  "hashtags": "Hashtagler",
+  "addHashtag": "Hashtag Ekle",
+  "hashtagHint": "#hashtag",
+  "tone": "Ton",
+  "toneInformative": "Bilgilendirici",
+  "toneEmotional": "Duygusal",
+  "toneFormal": "Resmi",
+  "toneHopeful": "Umut Verici",
+  "toneCallToAction": "Eylem Çağrısı",
+  "callToAction": "Eylem Çağrısı Metni",
+  "callToActionHint": "Örn: Bugün harekete geç!",
+  "images": "Görseller",
+  "addImages": "Görsel Ekle",
+  "maxImages": "En fazla 10 görsel",
+  "video": "Video",
+  "addVideo": "Video Ekle",
+  "optionalVideo": "İsteğe bağlı (maks. 1)",
+  "schedule": "Zamanlama",
+  "addTime": "Saat Ekle",
+  "generateDrafts": "Taslakları Oluştur",
+  "drafts": "Taslaklar",
+  "draftReview": "Taslak İnceleme",
+  "selectVariant": "Bir varyant seçin",
+  "characters": "karakter",
+  "copy": "Kopyala",
+  "edit": "Düzenle",
+  "scheduleCampaign": "Planla",
+  "settings": "Ayarlar",
+  "languageSettings": "Dil Ayarları",
+  "autoLanguage": "Otomatik (Cihaz Dili)",
+  "turkish": "Türkçe",
+  "english": "English",
+  "german": "Deutsch",
+  "autoPost": "Otomatik Paylaşım",
+  "autoPostDescription": "Planlanan saatlerde otomatik olarak paylaş",
+  "dailyLimit": "Günlük Limit",
+  "dailyLimitDescription": "Günde en fazla paylaşım sayısı",
+  "logs": "Geçmiş",
+  "noLogs": "Henüz kayıt yok",
+  "logGenerated": "Oluşturuldu",
+  "logScheduled": "Planlandı",
+  "logPosted": "Paylaşıldı",
+  "logFailed": "Başarısız",
+  "logSkipped": "Atlandı",
+  "save": "Kaydet",
+  "cancel": "İptal",
+  "delete": "Sil",
+  "confirm": "Onayla",
+  "error": "Hata",
+  "success": "Başarılı",
+  "loading": "Yükleniyor...",
+  "retry": "Tekrar Dene",
+  "required": "Bu alan zorunludur",
+  "invalidHashtag": "Hashtag # ile başlamalı",
+  "maxCharacters": "En fazla {count} karakter",
+  "@maxCharacters": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "scheduledFor": "Planlandı: {date}",
+  "@scheduledFor": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "variantCount": "{count} varyant",
+  "@variantCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
+}

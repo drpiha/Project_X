@@ -1,0 +1,14 @@
+{
+    "timezone": "Europe/Istanbul",
+    "recurrence": "daily",
+    "times": [
+        "09:00",
+        "12:00",
+        "18:00"
+    ],
+    "start_date": "2025-12-24",
+    "end_date": "2026-01-24",
+    "auto_post": false,
+    "daily_limit": 3,
+    "selected_variant_index": 0
+}
