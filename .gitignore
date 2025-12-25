@@ -10,10 +10,12 @@ Thumbs.db
 
 # Project specific
 backend/venv/
-backend/__pycache__/
+backend/**/__pycache__/
 backend/*.db
 backend/.env
 backend/media/
+**/__pycache__/
+*.pyc
 
 app/.dart_tool/
 app/.packages
