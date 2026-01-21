@@ -36,7 +36,8 @@ aiofiles==23.2.1
 openai==1.10.0
 
 # File type detection (magic bytes)
-python-magic-bin==0.4.14  # Windows compatible
+# python-magic-bin is Windows only, python-magic works on Linux
+python-magic==0.4.27
 pillow==10.1.0
 
 # Logging and monitoring
