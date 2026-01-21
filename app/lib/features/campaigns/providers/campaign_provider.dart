@@ -4,7 +4,17 @@ import 'package:dio/dio.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:campaign_app/core/api/api_client.dart';
 import 'package:campaign_app/core/config/app_config.dart';
-import 'dart:io';
+
+/// Parse UTC datetime string from backend and convert to local time.
+/// Backend sends naive UTC datetimes without timezone info.
+DateTime parseUtcToLocal(String dateTimeStr) {
+  final parsed = DateTime.parse(dateTimeStr);
+  // Backend sends naive UTC datetime, so treat it as UTC and convert to local
+  return DateTime.utc(
+    parsed.year, parsed.month, parsed.day,
+    parsed.hour, parsed.minute, parsed.second, parsed.millisecond,
+  ).toLocal();
+}
 
 // Campaign model
 class Campaign {
@@ -35,22 +45,43 @@ class Campaign {
   });
 
   factory Campaign.fromJson(Map<String, dynamic> json) {
+    // Parse hashtags - handle both array and JSON string formats
+    List<String> parseHashtags(dynamic hashtagsData) {
+      if (hashtagsData == null) return [];
+      if (hashtagsData is List) {
+        return hashtagsData.map((e) => e.toString()).toList();
+      }
+      if (hashtagsData is String) {
+        if (hashtagsData.isEmpty || hashtagsData == '[]') return [];
+        try {
+          final parsed = List<dynamic>.from(
+            hashtagsData.startsWith('[')
+                ? (hashtagsData as String).substring(1, hashtagsData.length - 1).split(',').map((s) => s.trim().replaceAll('"', ''))
+                : hashtagsData.split(',').map((s) => s.trim())
+          );
+          return parsed.where((e) => e.toString().isNotEmpty).map((e) => e.toString()).toList();
+        } catch (e) {
+          return [];
+        }
+      }
+      return [];
+    }
+
     return Campaign(
       id: json['id'] as String,
       userId: json['user_id'] as String,
       title: json['title'] as String,
       description: json['description'] as String?,
       language: json['language'] as String? ?? 'tr',
-      hashtags: (json['hashtags'] as List<dynamic>?)
-              ?.map((e) => e as String)
-              .toList() ?? [],
+      hashtags: parseHashtags(json['hashtags']),
       tone: json['tone'] as String?,
       callToAction: json['call_to_action'] as String?,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      updatedAt: DateTime.parse(json['updated_at'] as String),
+      createdAt: parseUtcToLocal(json['created_at'] as String),
+      updatedAt: parseUtcToLocal(json['updated_at'] as String? ?? json['created_at'] as String),
       mediaAssets: (json['media_assets'] as List<dynamic>?)
               ?.map((e) => MediaAsset.fromJson(e as Map<String, dynamic>))
-              .toList() ?? [],
+              .toList() ??
+          [],
     );
   }
 }
@@ -116,12 +147,13 @@ class Draft {
       charCount: json['char_count'] as int,
       hashtagsUsed: (json['hashtags_used'] as List<dynamic>?)
               ?.map((e) => e as String)
-              .toList() ?? [],
+              .toList() ??
+          [],
       status: json['status'] as String,
       lastError: json['last_error'] as String?,
-      createdAt: DateTime.parse(json['created_at'] as String),
+      createdAt: parseUtcToLocal(json['created_at'] as String),
       postedAt: json['posted_at'] != null
-          ? DateTime.parse(json['posted_at'] as String)
+          ? parseUtcToLocal(json['posted_at'] as String)
           : null,
     );
   }
@@ -181,10 +213,12 @@ class Variant {
       charCount: json['char_count'] as int,
       hashtagsUsed: (json['hashtags_used'] as List<dynamic>?)
               ?.map((e) => e as String)
-              .toList() ?? [],
+              .toList() ??
+          [],
       safetyNotes: (json['safety_notes'] as List<dynamic>?)
               ?.map((e) => e as String)
-              .toList() ?? [],
+              .toList() ??
+          [],
     );
   }
 }
@@ -221,14 +255,23 @@ class CampaignsNotifier extends StateNotifier<CampaignsState> {
 
   Future<void> fetchCampaigns() async {
     state = state.copyWith(isLoading: true, error: null);
-    
+
     try {
       final response = await _apiClient.get(AppConfig.campaigns);
-      final data = response.data as Map<String, dynamic>;
-      final campaignsList = (data['campaigns'] as List<dynamic>)
+      // Backend returns {"campaigns": [...], "total": N}
+      final responseData = response.data;
+      final List<dynamic> data;
+      if (responseData is List) {
+        data = responseData;
+      } else if (responseData is Map && responseData.containsKey('campaigns')) {
+        data = responseData['campaigns'] as List<dynamic>;
+      } else {
+        data = [];
+      }
+      final campaignsList = data
           .map((e) => Campaign.fromJson(e as Map<String, dynamic>))
           .toList();
-      
+
       state = state.copyWith(
         campaigns: campaignsList,
         isLoading: false,
@@ -249,54 +292,54 @@ class CampaignsNotifier extends StateNotifier<CampaignsState> {
     String? tone,
     String? callToAction,
     List<XFile>? images,
-    XFile? video,
+    List<XFile>? videos,
   }) async {
     try {
-      final map = {
+      // Backend expects Form data (multipart/form-data), not JSON
+      final formData = FormData.fromMap({
         'title': title,
         'language': language,
-        'hashtags': hashtags.join(','),
-      };
+      });
+
+      // Add hashtags as separate form fields (backend expects this format)
+      for (final tag in hashtags) {
+        formData.fields.add(MapEntry('hashtags', tag));
+      }
 
       if (description != null && description.isNotEmpty) {
-        map['description'] = description;
+        formData.fields.add(MapEntry('description', description));
       }
-      
+
       if (tone != null && tone.isNotEmpty) {
-        map['tone'] = tone;
+        formData.fields.add(MapEntry('tone', tone));
       }
-      
+
       if (callToAction != null && callToAction.isNotEmpty) {
-        map['call_to_action'] = callToAction;
+        formData.fields.add(MapEntry('call_to_action', callToAction));
       }
 
-      final formData = FormData.fromMap(map);
-
-      if (images != null) {
-        for (final image in images) {
-          final file = kIsWeb
-              ? MultipartFile.fromBytes(await image.readAsBytes(), filename: image.name)
-              : await MultipartFile.fromFile(image.path);
-          
-          formData.files.add(MapEntry('images', file));
-        }
-      }
-
-      if (video != null) {
-        final file = kIsWeb
-            ? MultipartFile.fromBytes(await video.readAsBytes(), filename: video.name)
-            : await MultipartFile.fromFile(video.path);
-
-        formData.files.add(MapEntry('video', file));
-      }
-
-      final response = await _apiClient.postMultipart(
+      // Send as Form data POST request
+      final response = await _apiClient.post(
         AppConfig.campaigns,
-        formData: formData,
+        data: formData,
       );
 
       final campaign = Campaign.fromJson(response.data as Map<String, dynamic>);
-      
+
+      // Upload images if provided
+      if (images != null && images.isNotEmpty) {
+        for (final image in images) {
+          await uploadMedia(campaign.id, image);
+        }
+      }
+
+      // Upload videos if provided
+      if (videos != null && videos.isNotEmpty) {
+        for (final video in videos) {
+          await uploadMedia(campaign.id, video);
+        }
+      }
+
       state = state.copyWith(
         campaigns: [campaign, ...state.campaigns],
       );
@@ -366,13 +409,17 @@ class CampaignsNotifier extends StateNotifier<CampaignsState> {
   Future<void> scheduleCampaign({
     required String campaignId,
     required String timezone,
-    required List<String> times,
+    List<String>? times,
+    List<String>? scheduledTimes, // Full ISO datetime strings (preferred)
     required DateTime startDate,
     DateTime? endDate,
     bool autoPost = false,
     String recurrence = 'daily',
     int dailyLimit = 10,
     int selectedVariantIndex = 0,
+    int imagesPerTweet = 1,
+    int postIntervalMin = 120, // 2 minutes default
+    int postIntervalMax = 300, // 5 minutes default
   }) async {
     try {
       await _apiClient.post(
@@ -380,16 +427,165 @@ class CampaignsNotifier extends StateNotifier<CampaignsState> {
         data: {
           'timezone': timezone,
           'recurrence': recurrence,
-          'times': times,
+          'times': times ?? [],
+          'scheduled_times': scheduledTimes ?? [], // Full ISO datetime strings
           'start_date': startDate.toIso8601String().split('T')[0],
           'end_date': endDate?.toIso8601String().split('T')[0],
           'auto_post': autoPost,
           'daily_limit': dailyLimit,
           'selected_variant_index': selectedVariantIndex,
+          'images_per_tweet': imagesPerTweet,
+          'post_interval_min': postIntervalMin,
+          'post_interval_max': postIntervalMax,
         },
       );
     } catch (e) {
       rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> getCampaignDetail(String campaignId) async {
+    try {
+      final response = await _apiClient.get(
+        '${AppConfig.campaignDetail(campaignId)}/detail',
+      );
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Get a single campaign by ID
+  Future<Campaign?> getCampaign(String campaignId) async {
+    try {
+      final response = await _apiClient.get(
+        AppConfig.campaignDetail(campaignId),
+      );
+      return Campaign.fromJson(response.data as Map<String, dynamic>);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Update a campaign
+  Future<Campaign?> updateCampaign({
+    required String campaignId,
+    String? title,
+    String? description,
+    String? language,
+    List<String>? hashtags,
+    String? tone,
+    String? callToAction,
+  }) async {
+    try {
+      final data = <String, dynamic>{};
+      if (title != null) data['title'] = title;
+      if (description != null) data['description'] = description;
+      if (language != null) data['language'] = language;
+      if (hashtags != null) data['hashtags'] = hashtags;
+      if (tone != null) data['tone'] = tone;
+      if (callToAction != null) data['call_to_action'] = callToAction;
+
+      final response = await _apiClient.put(
+        AppConfig.campaignDetail(campaignId),
+        data: data,
+      );
+
+      final updated = Campaign.fromJson(response.data as Map<String, dynamic>);
+
+      // Update in local state
+      state = state.copyWith(
+        campaigns: state.campaigns.map((c) => c.id == campaignId ? updated : c).toList(),
+      );
+
+      return updated;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> regenerateDraft(String draftId) async {
+    try {
+      final response = await _apiClient.post(
+        '/v1/drafts/$draftId/regenerate',
+        data: {},
+      );
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Update draft text and/or schedule
+  Future<Map<String, dynamic>> updateDraft({
+    required String draftId,
+    String? text,
+    DateTime? scheduledFor,
+    String? status,
+  }) async {
+    try {
+      final data = <String, dynamic>{};
+      if (text != null) data['text'] = text;
+      if (scheduledFor != null) data['scheduled_for'] = scheduledFor.toIso8601String();
+      if (status != null) data['status'] = status;
+
+      final response = await _apiClient.put(
+        '/v1/drafts/$draftId',
+        data: data,
+      );
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  /// Delete a draft
+  Future<void> deleteDraft(String draftId) async {
+    try {
+      await _apiClient.delete('/v1/drafts/$draftId');
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>?> uploadMedia(String campaignId, XFile file) async {
+    try {
+      final bytes = await file.readAsBytes();
+      final fileName = file.name;
+
+      // Determine content type
+      String contentType = 'application/octet-stream';
+      if (fileName.toLowerCase().endsWith('.jpg') || fileName.toLowerCase().endsWith('.jpeg')) {
+        contentType = 'image/jpeg';
+      } else if (fileName.toLowerCase().endsWith('.png')) {
+        contentType = 'image/png';
+      } else if (fileName.toLowerCase().endsWith('.gif')) {
+        contentType = 'image/gif';
+      } else if (fileName.toLowerCase().endsWith('.mp4')) {
+        contentType = 'video/mp4';
+      } else if (fileName.toLowerCase().endsWith('.mov')) {
+        contentType = 'video/quicktime';
+      }
+
+      final formData = FormData.fromMap({
+        'campaign_id': campaignId,
+        'file': MultipartFile.fromBytes(
+          bytes,
+          filename: fileName,
+          contentType: DioMediaType.parse(contentType),
+        ),
+        'alt_text': '',
+      });
+
+      final response = await _apiClient.post(
+        AppConfig.mediaUpload,
+        data: formData,
+      );
+
+      return response.data as Map<String, dynamic>;
+    } catch (e) {
+      debugPrint('Media upload failed: $e');
+      return null;
     }
   }
 }

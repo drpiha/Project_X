@@ -41,43 +41,49 @@ async def generate_drafts(
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Generate tweet variants for a campaign.
-    
-    Uses the rule-based generator by default.
-    Returns 6 variants with character counts and recommended alt text.
+    Generate tweet variants for a campaign using AI.
+
+    Requires OpenRouter API key to be configured.
+    Returns unique, original AI-generated tweet variants.
     """
     campaign_service = get_campaign_service()
-    
+
     # Verify campaign exists and belongs to user
     campaign = await campaign_service.get_campaign(db, campaign_id, user.id)
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
-    
+
     # Validate campaign_id in request matches URL
     if request.campaign_id != campaign_id:
         raise HTTPException(
-            status_code=400, 
+            status_code=400,
             detail="Campaign ID in request body must match URL"
         )
-    
-    # Get generator (prefer LLM if configured)
+
+    # Check if AI API key is configured (Groq or OpenRouter)
     from app.core.config import get_settings
     settings = get_settings()
-    generator_type = "llm" if settings.openrouter_api_key else "rule_based"
-    generator = get_generator(generator_type)
-    
-    # Generate variants
+    has_groq = settings.groq_api_key and len(settings.groq_api_key) > 0
+    has_openrouter = settings.openrouter_api_key and len(settings.openrouter_api_key) > 0
+    if not has_groq and not has_openrouter:
+        raise HTTPException(
+            status_code=503,
+            detail="AI tweet generation is not configured. Please set GROQ_API_KEY or OPENROUTER_API_KEY."
+        )
+
+    # Use LLM generator only - no fallback
+    generator = get_generator("llm")
+
+    # Generate variants with AI
     try:
         response = await generator.generate(request)
     except Exception as e:
-        # Fallback to rule-based if LLM fails (e.g. invalid key or rate limit)
-        if generator_type == "llm":
-            print(f"LLM generation failed: {e}. Falling back to rule-based.")
-            generator = get_generator("rule_based")
-            response = await generator.generate(request)
-        else:
-            raise e
-    
+        print(f"AI Generation Error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"AI tweet generation failed: {str(e)}"
+        )
+
     # Save drafts to database
     for variant in response.variants:
         await campaign_service.create_draft(
@@ -88,7 +94,7 @@ async def generate_drafts(
             char_count=variant.char_count,
             hashtags_used=variant.hashtags_used,
         )
-    
+
     # Log generation
     await campaign_service.log_action(
         db, campaign_id, "generated",
@@ -98,5 +104,5 @@ async def generate_drafts(
             "language": response.language,
         }
     )
-    
+
     return response
