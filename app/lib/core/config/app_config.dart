@@ -8,7 +8,7 @@ class AppConfig {
 
   // Default API URL based on build mode
   static const String _defaultApiUrl = bool.fromEnvironment('dart.vm.product')
-      ? 'https://campaign-backend.campaignapp.workers.dev'  // Production
+      ? 'https://campaign-api.onrender.com'  // Production (Render.com)
       : 'http://localhost:8000';  // Development
 
   // API timeout settings
