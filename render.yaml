@@ -18,7 +18,7 @@ services:
           name: campaign-db
           property: connectionString
       - key: PYTHON_VERSION
-        value: "3.11"
+        value: "3.11.0"
       - key: ENVIRONMENT
         value: production
       - key: AI_PROVIDER
