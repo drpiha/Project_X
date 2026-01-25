@@ -129,9 +129,12 @@ async def start_oauth(
     expires_at = datetime.utcnow() + timedelta(minutes=settings.oauth_state_ttl_minutes)
 
     # Get PKCE code verifier if not mock mode
+    # Use peek instead of pop - verifier should stay in memory until callback
+    # But more importantly, we store it in DB for persistence across server restarts
     code_verifier = None
     if not x_service.is_mock:
-        code_verifier = x_service.get_code_verifier(state)
+        # Access directly without removing - verifier needs to stay for callback
+        code_verifier = x_service._code_verifiers.get(state)
 
     # Store or update X account with state
     query = select(XAccount).where(XAccount.user_id == user.id)
