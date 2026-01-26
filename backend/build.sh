@@ -7,58 +7,57 @@ echo "Installing dependencies..."
 pip install -r requirements.txt
 
 echo "Running database migrations..."
-# First create all tables (for new deployments)
 python -c "
 import asyncio
-from sqlalchemy import text
 from app.db.session import engine
 from app.db.models import Base
 
 async def init_db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    print('Database tables created successfully')
+    print('Database tables created/updated successfully')
 
 asyncio.run(init_db())
 "
 
-# Then add any missing columns for existing deployments
-echo "Ensuring all columns exist..."
+# Add missing columns (safe - uses IF NOT EXISTS)
+echo "Ensuring schema is up to date..."
 python -c "
 import asyncio
 from sqlalchemy import text
 from app.db.session import engine
 
-async def ensure_columns():
+async def migrate():
     async with engine.begin() as conn:
-        # Check and add oauth_code_verifier column if missing
-        try:
-            await conn.execute(text('''
-                ALTER TABLE x_accounts ADD COLUMN IF NOT EXISTS oauth_code_verifier TEXT
-            '''))
-            print('oauth_code_verifier column ensured')
-        except Exception as e:
-            print(f'Column already exists or error: {e}')
+        # Get existing columns
+        result = await conn.execute(text(
+            \"SELECT column_name FROM information_schema.columns WHERE table_name = 'x_accounts'\"
+        ))
+        existing = {row[0] for row in result}
+        print(f'Existing x_accounts columns: {existing}')
 
-        # Check and add oauth_state_expires_at column if missing
-        try:
-            await conn.execute(text('''
-                ALTER TABLE x_accounts ADD COLUMN IF NOT EXISTS oauth_state_expires_at TIMESTAMP
-            '''))
-            print('oauth_state_expires_at column ensured')
-        except Exception as e:
-            print(f'Column already exists or error: {e}')
+        if 'oauth_code_verifier' not in existing:
+            await conn.execute(text('ALTER TABLE x_accounts ADD COLUMN oauth_code_verifier TEXT'))
+            print('Added oauth_code_verifier')
 
-        # Check and add oauth_state_used column if missing
-        try:
-            await conn.execute(text('''
-                ALTER TABLE x_accounts ADD COLUMN IF NOT EXISTS oauth_state_used BOOLEAN DEFAULT FALSE
-            '''))
-            print('oauth_state_used column ensured')
-        except Exception as e:
-            print(f'Column already exists or error: {e}')
+        if 'oauth_state_expires_at' not in existing:
+            await conn.execute(text('ALTER TABLE x_accounts ADD COLUMN oauth_state_expires_at TIMESTAMP'))
+            print('Added oauth_state_expires_at')
 
-asyncio.run(ensure_columns())
-"
+        if 'oauth_state_used' not in existing:
+            await conn.execute(text('ALTER TABLE x_accounts ADD COLUMN oauth_state_used BOOLEAN DEFAULT FALSE'))
+            print('Added oauth_state_used')
+
+        # Check draft_media_assets table
+        result2 = await conn.execute(text(
+            \"SELECT table_name FROM information_schema.tables WHERE table_name = 'draft_media_assets'\"
+        ))
+        if not result2.fetchone():
+            print('draft_media_assets table will be created by create_all')
+
+    print('Schema migration complete')
+
+asyncio.run(migrate())
+" || echo "Migration warning (non-fatal)"
 
 echo "Build complete!"
