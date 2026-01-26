@@ -15,11 +15,11 @@ class CampaignCreate(BaseModel):
     @field_validator('hashtags')
     @classmethod
     def validate_hashtags(cls, v):
+        """Validate hashtags - preserve exact user formatting including spaces."""
         validated = []
         for tag in v:
+            # Only strip leading/trailing whitespace, preserve internal spaces
             tag = tag.strip()
-            # Remove spaces
-            tag = tag.replace(' ', '')
             if len(tag) >= 1:
                 validated.append(tag)
         return validated

@@ -16,87 +16,132 @@ class RuleBasedGenerator(BaseTweetGenerator):
     - Character limit enforcement
     """
     
-    # Templates by language and angle
+    # Templates by language and TONE (not angle)
     TEMPLATES: Dict[str, Dict[str, List[str]]] = {
         "tr": {
-            "human_story": [
+            "informative": [
+                "Biliyor muydunuz? {topic} hakkında önemli veriler mevcut. {cta}",
+                "Araştırmalar gösteriyor ki {topic} konusunda dikkat çekici sonuçlar var. {cta}",
+                "{topic} ile ilgili bilmeniz gereken gerçekler bunlar. {cta}",
+                "Veriler açık: {topic} konusu giderek önem kazanıyor. {cta}",
+                "İstatistikler {topic} hakkında önemli bilgiler ortaya koyuyor. {cta}",
+                "Uzmanlar {topic} konusunda şunları söylüyor. {cta}",
+            ],
+            "emotional": [
                 "{topic} hakkında düşündükçe, insan hikayelerinin gücünü görüyoruz. {cta}",
-                "Gerçek insanların {topic} ile yaşadığı deneyimler bize ilham veriyor. {cta}",
+                "Gerçek insanların {topic} ile yaşadığı deneyimler yürek burkuyor. {cta}",
                 "Her birimizin {topic} konusunda bir hikayesi var. {cta}",
+                "{topic} konusu hepimizi derinden etkiliyor. {cta}",
+                "Kalbimiz {topic} için atıyor. {cta}",
+                "{topic} hakkında hissettiklerimizi paylaşmak istiyoruz. {cta}",
             ],
-            "facts": [
-                "{topic} konusunda bilmeniz gereken gerçekler var. {cta}",
-                "Araştırmalar {topic} hakkında önemli sonuçlar ortaya koyuyor. {cta}",
-                "{topic} ile ilgili veriler dikkat çekici. {cta}",
+            "formal": [
+                "{topic} konusunda resmi açıklama yapılması gerekmektedir. {cta}",
+                "Bu bağlamda {topic} değerlendirilmelidir. {cta}",
+                "{topic} hakkında profesyonel bir yaklaşım benimsenmektedir. {cta}",
+                "Kurumsal perspektiften {topic} ele alınmalıdır. {cta}",
+                "{topic} konusunda stratejik adımlar atılmaktadır. {cta}",
+                "Resmi kaynaklara göre {topic} öncelikli konular arasındadır. {cta}",
             ],
-            "solution": [
-                "{topic} için somut çözümler üretebiliriz. {cta}",
+            "hopeful": [
+                "{topic} için umut dolu bir gelecek mümkün. {cta}",
                 "Birlikte {topic} konusunda değişim yaratabiliriz. {cta}",
-                "{topic} sorununa pratik yaklaşımlar mümkün. {cta}",
+                "{topic} için olumlu adımlar atılıyor. {cta}",
+                "Yarın {topic} için daha iyi olacak. {cta}",
+                "{topic} konusunda iyimseriz çünkü birlikte güçlüyüz. {cta}",
+                "Umut var: {topic} için çözümler üretiliyor. {cta}",
             ],
-            "international_awareness": [
-                "Dünya genelinde {topic} konusu giderek daha fazla gündemde. {cta}",
-                "Uluslararası arenada {topic} tartışılıyor. {cta}",
-                "Global perspektiften {topic} değerlendirmesi. {cta}",
-            ],
-            "solidarity": [
-                "{topic} konusunda dayanışma şart. {cta}",
-                "Birlik ve beraberlikle {topic} için ses çıkarıyoruz. {cta}",
-                "Omuz omuza {topic} için mücadele ediyoruz. {cta}",
+            "call_to_action": [
+                "Hemen harekete geçin! {topic} için destek olun. {cta}",
+                "{topic} konusunda sesinizi yükseltin! {cta}",
+                "Şimdi {topic} için bir şeyler yapma zamanı! {cta}",
+                "Bize katılın! {topic} için birlikte mücadele edelim. {cta}",
+                "{topic} için harekete geçme zamanı geldi! {cta}",
+                "Eyleme geç! {topic} senin de desteğine ihtiyaç duyuyor. {cta}",
             ],
         },
         "en": {
-            "human_story": [
+            "informative": [
+                "Did you know? Important data about {topic} is available. {cta}",
+                "Research shows significant findings about {topic}. {cta}",
+                "Here are the facts you need to know about {topic}. {cta}",
+                "The data is clear: {topic} is gaining importance. {cta}",
+                "Statistics reveal important insights about {topic}. {cta}",
+                "Experts say this about {topic}. {cta}",
+            ],
+            "emotional": [
                 "Thinking about {topic}, we see the power of human stories. {cta}",
-                "Real experiences with {topic} inspire us all. {cta}",
+                "Real experiences with {topic} are heartbreaking. {cta}",
                 "Each of us has a story about {topic}. {cta}",
+                "{topic} deeply affects us all. {cta}",
+                "Our hearts beat for {topic}. {cta}",
+                "We want to share what we feel about {topic}. {cta}",
             ],
-            "facts": [
-                "Here are facts you need to know about {topic}. {cta}",
-                "Research reveals important findings about {topic}. {cta}",
-                "The data on {topic} is striking. {cta}",
+            "formal": [
+                "An official statement regarding {topic} is warranted. {cta}",
+                "In this context, {topic} must be evaluated. {cta}",
+                "A professional approach to {topic} is being adopted. {cta}",
+                "From a corporate perspective, {topic} should be addressed. {cta}",
+                "Strategic steps are being taken regarding {topic}. {cta}",
+                "According to official sources, {topic} is among priority issues. {cta}",
             ],
-            "solution": [
-                "We can create concrete solutions for {topic}. {cta}",
-                "Together, we can drive change on {topic}. {cta}",
-                "Practical approaches to {topic} are possible. {cta}",
+            "hopeful": [
+                "A hopeful future for {topic} is possible. {cta}",
+                "Together, we can create change for {topic}. {cta}",
+                "Positive steps are being taken for {topic}. {cta}",
+                "Tomorrow will be better for {topic}. {cta}",
+                "We are optimistic about {topic} because together we are strong. {cta}",
+                "There is hope: solutions for {topic} are being developed. {cta}",
             ],
-            "international_awareness": [
-                "Globally, {topic} is increasingly in the spotlight. {cta}",
-                "{topic} is being discussed on the international stage. {cta}",
-                "A global perspective on {topic}. {cta}",
-            ],
-            "solidarity": [
-                "Solidarity is essential for {topic}. {cta}",
-                "United, we raise our voice for {topic}. {cta}",
-                "Standing together for {topic}. {cta}",
+            "call_to_action": [
+                "Take action now! Support {topic}. {cta}",
+                "Raise your voice for {topic}! {cta}",
+                "Now is the time to do something for {topic}! {cta}",
+                "Join us! Let's fight together for {topic}. {cta}",
+                "It's time to take action for {topic}! {cta}",
+                "Act now! {topic} needs your support. {cta}",
             ],
         },
         "de": {
-            "human_story": [
+            "informative": [
+                "Wussten Sie? Wichtige Daten über {topic} sind verfügbar. {cta}",
+                "Forschungen zeigen bedeutende Erkenntnisse über {topic}. {cta}",
+                "Hier sind die Fakten, die Sie über {topic} wissen müssen. {cta}",
+                "Die Daten sind klar: {topic} gewinnt an Bedeutung. {cta}",
+                "Statistiken zeigen wichtige Einblicke über {topic}. {cta}",
+                "Experten sagen dies über {topic}. {cta}",
+            ],
+            "emotional": [
                 "Wenn wir über {topic} nachdenken, sehen wir die Kraft menschlicher Geschichten. {cta}",
-                "Echte Erfahrungen mit {topic} inspirieren uns alle. {cta}",
+                "Echte Erfahrungen mit {topic} sind herzzerreißend. {cta}",
                 "Jeder von uns hat eine Geschichte über {topic}. {cta}",
+                "{topic} betrifft uns alle tief. {cta}",
+                "Unsere Herzen schlagen für {topic}. {cta}",
+                "Wir möchten teilen, was wir über {topic} fühlen. {cta}",
             ],
-            "facts": [
-                "Hier sind Fakten, die Sie über {topic} wissen sollten. {cta}",
-                "Forschungen zeigen wichtige Erkenntnisse über {topic}. {cta}",
-                "Die Daten zu {topic} sind bemerkenswert. {cta}",
+            "formal": [
+                "Eine offizielle Erklärung zu {topic} ist erforderlich. {cta}",
+                "In diesem Zusammenhang muss {topic} bewertet werden. {cta}",
+                "Ein professioneller Ansatz zu {topic} wird verfolgt. {cta}",
+                "Aus unternehmerischer Sicht sollte {topic} angegangen werden. {cta}",
+                "Strategische Schritte werden bezüglich {topic} unternommen. {cta}",
+                "Laut offiziellen Quellen gehört {topic} zu den Prioritäten. {cta}",
             ],
-            "solution": [
-                "Wir können konkrete Lösungen für {topic} schaffen. {cta}",
-                "Gemeinsam können wir bei {topic} Veränderungen bewirken. {cta}",
-                "Praktische Ansätze für {topic} sind möglich. {cta}",
+            "hopeful": [
+                "Eine hoffnungsvolle Zukunft für {topic} ist möglich. {cta}",
+                "Gemeinsam können wir Veränderungen für {topic} schaffen. {cta}",
+                "Positive Schritte werden für {topic} unternommen. {cta}",
+                "Morgen wird besser für {topic} sein. {cta}",
+                "Wir sind optimistisch bezüglich {topic}, denn gemeinsam sind wir stark. {cta}",
+                "Es gibt Hoffnung: Lösungen für {topic} werden entwickelt. {cta}",
             ],
-            "international_awareness": [
-                "Weltweit steht {topic} zunehmend im Fokus. {cta}",
-                "{topic} wird auf internationaler Ebene diskutiert. {cta}",
-                "Eine globale Perspektive auf {topic}. {cta}",
-            ],
-            "solidarity": [
-                "Solidarität ist für {topic} unerlässlich. {cta}",
-                "Vereint erheben wir unsere Stimme für {topic}. {cta}",
-                "Gemeinsam stehen wir für {topic} ein. {cta}",
+            "call_to_action": [
+                "Handeln Sie jetzt! Unterstützen Sie {topic}. {cta}",
+                "Erheben Sie Ihre Stimme für {topic}! {cta}",
+                "Jetzt ist die Zeit, etwas für {topic} zu tun! {cta}",
+                "Schließen Sie sich uns an! Kämpfen wir gemeinsam für {topic}. {cta}",
+                "Es ist Zeit, für {topic} zu handeln! {cta}",
+                "Werden Sie aktiv! {topic} braucht Ihre Unterstützung. {cta}",
             ],
         },
     }
@@ -147,20 +192,15 @@ class RuleBasedGenerator(BaseTweetGenerator):
         """Generate tweet variants using rule-based templates."""
         language = request.language
         variants: List[VariantResponse] = []
-        
-        # Get angles to rotate through
-        angles = request.anti_repeat.rotate_angles or [
-            "human_story", "facts", "solution", "international_awareness", "solidarity"
-        ]
-        
+
+        # Use the tone from the request to select templates
+        tone = request.tone or "informative"
+
         # Generate requested number of variants
         for i in range(request.output.variants):
-            # Rotate through angles
-            angle = angles[i % len(angles)]
-            
-            # Get templates for this angle
+            # Get templates for this tone
             templates = self.TEMPLATES.get(language, self.TEMPLATES["en"]).get(
-                angle, self.TEMPLATES["en"]["human_story"]
+                tone, self.TEMPLATES["en"]["informative"]
             )
             
             # Pick a template (rotate through available ones)
@@ -242,57 +282,60 @@ class RuleBasedGenerator(BaseTweetGenerator):
         return ""
     
     def _insert_hashtags(self, text: str, hashtags: List[str], target_chars: int) -> tuple[str, List[str]]:
-        """Insert hashtags naturally into the text or at the end."""
+        """Insert hashtags at the end of the text.
+
+        User-provided hashtags are ALWAYS appended to the tweet as-is.
+        User may or may not include # character - we preserve exactly what they entered.
+        """
         if not hashtags:
             return text, []
-        
-        hashtags_used = []
-        remaining_chars = target_chars - len(text)
-        
-        # Try to fit hashtags
-        for tag in hashtags:
-            tag_with_space = f" {tag}"
-            if remaining_chars >= len(tag_with_space):
-                remaining_chars -= len(tag_with_space)
-                hashtags_used.append(tag)
-        
+
+        # ALWAYS add all hashtags at the end - they are user-provided and must appear
+        hashtags_used = list(hashtags)  # Use all hashtags
+
         # Add hashtags at the end with proper spacing
-        if hashtags_used:
-            hashtag_str = " ".join(hashtags_used)
-            text = f"{text.rstrip()} {hashtag_str}"
-        
+        hashtag_str = " ".join(tag.strip() for tag in hashtags_used)
+        text = f"{text.rstrip()} {hashtag_str}"
+
         return text, hashtags_used
     
     def _enforce_char_limit(self, text: str, max_chars: int, hashtags: List[str]) -> str:
-        """Ensure text fits within character limit."""
+        """Ensure text fits within character limit while preserving hashtags.
+
+        Hashtags are always preserved - main text is truncated if needed.
+        """
         if len(text) <= max_chars:
             return text
-        
-        # Calculate space needed for hashtags
-        hashtag_space = sum(len(tag) + 1 for tag in hashtags)
-        
+
+        # Calculate space needed for hashtags (they must be preserved)
+        hashtag_str = " ".join(tag.strip() for tag in hashtags)
+        hashtag_space = len(hashtag_str) + 1 if hashtags else 0  # +1 for space before
+
         # Truncate main text while preserving hashtags
-        available = max_chars - hashtag_space - 3  # -3 for "..."
-        
+        available = max_chars - hashtag_space - 4  # -4 for "... "
+
         # Find main text (before hashtags)
         main_text = text
         for tag in hashtags:
             main_text = main_text.replace(tag, "").strip()
-        
-        if len(main_text) > available:
+
+        if len(main_text) > available and available > 20:
             # Truncate at word boundary
             truncated = main_text[:available]
             last_space = truncated.rfind(' ')
             if last_space > available // 2:
                 truncated = truncated[:last_space]
             truncated = truncated.rstrip('.,!? ') + "..."
-            
+
             # Reconstruct with hashtags
             if hashtags:
-                text = f"{truncated} {' '.join(hashtags)}"
+                text = f"{truncated} {hashtag_str}"
             else:
                 text = truncated
-        
+        elif hashtags:
+            # If text is too short to truncate, just append hashtags
+            text = f"{main_text.rstrip()} {hashtag_str}"
+
         return text
     
     def _clean_text(self, text: str) -> str:

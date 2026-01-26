@@ -68,8 +68,9 @@ class Settings(BaseSettings):
     # Feature Flags
     feature_x_posting: bool = True
 
-    # Scheduler
-    scheduler_interval_seconds: int = 60
+    # Scheduler - Run every 30 seconds for better timing accuracy
+    # This ensures scheduled posts are caught within ~30 seconds of their scheduled time
+    scheduler_interval_seconds: int = 30
 
     # Generator
     default_target_chars: int = 268
