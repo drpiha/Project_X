@@ -20,8 +20,10 @@ def get_generator(generator_type: str = "llm") -> BaseTweetGenerator:
     settings = get_settings()
 
     if generator_type == "llm":
-        if not settings.openrouter_api_key:
-            raise ValueError("OpenRouter API key is required for AI tweet generation. Set OPENROUTER_API_KEY in environment.")
+        has_groq = settings.groq_api_key and len(settings.groq_api_key) > 0
+        has_openrouter = settings.openrouter_api_key and len(settings.openrouter_api_key) > 0
+        if not has_groq and not has_openrouter:
+            raise ValueError("AI API key is required. Set GROQ_API_KEY or OPENROUTER_API_KEY in environment.")
         return LLMGenerator()
 
     # Rule-based generator is deprecated - always use LLM
