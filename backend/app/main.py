@@ -278,8 +278,8 @@ async def health_check():
     """Health check endpoint."""
     return {
         "status": "healthy",
-        "version": "2.0.1",
-        "build": "20260126",
+        "version": "2.1.0",
+        "build": "20260201",
         "environment": settings.environment,
         "scheduler": "running" if scheduler_task and not scheduler_task.done() else "stopped",
     }
