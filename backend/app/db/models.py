@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from typing import Optional, List
-from sqlalchemy import String, Text, DateTime, Boolean, Integer, ForeignKey, JSON
+from sqlalchemy import String, Text, DateTime, Boolean, Integer, ForeignKey, JSON, LargeBinary
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 import enum
 import json as json_module
@@ -121,6 +121,7 @@ class MediaAsset(Base):
     original_name: Mapped[str] = mapped_column(String(255), nullable=False)
     alt_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     x_media_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    file_data: Mapped[Optional[bytes]] = mapped_column(LargeBinary, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     # Relationships

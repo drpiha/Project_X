@@ -14,6 +14,7 @@ import logging
 import sys
 import os
 import random
+import tempfile
 from datetime import datetime, timedelta
 from typing import List
 
@@ -266,13 +267,29 @@ async def post_draft(
             # Resolve media path (handle relative paths)
             resolved_path = resolve_media_path(media_asset.path)
             logger.info(f"Media path: original={media_asset.path}, resolved={resolved_path}")
+            temp_file_path = None
 
-            # Verify file exists before attempting upload
+            # Verify file exists on disk, if not try DB fallback
             if not os.path.exists(resolved_path):
-                error_msg = f"Media file not found: {resolved_path} (original: {media_asset.path})"
-                logger.error(error_msg)
-                media_upload_errors.append(error_msg)
-                continue
+                logger.warning(f"Media file not on disk: {resolved_path}")
+                # DB fallback: restore file from file_data stored in database
+                if media_asset.file_data:
+                    try:
+                        ext = os.path.splitext(media_asset.path)[1] or '.jpg'
+                        fd, temp_file_path = tempfile.mkstemp(suffix=ext)
+                        with os.fdopen(fd, 'wb') as f:
+                            f.write(media_asset.file_data)
+                        resolved_path = temp_file_path
+                        logger.info(f"Restored media from DB to temp file: {temp_file_path} ({len(media_asset.file_data)} bytes)")
+                    except Exception as e:
+                        logger.error(f"Failed to restore media from DB: {e}")
+                        media_upload_errors.append(f"DB restore failed: {e}")
+                        continue
+                else:
+                    error_msg = f"Media file not found on disk or in DB: {resolved_path}"
+                    logger.error(error_msg)
+                    media_upload_errors.append(error_msg)
+                    continue
 
             # Upload to X
             if not x_service.is_mock and x_account and x_account.access_token_encrypted:
@@ -308,6 +325,13 @@ async def post_draft(
                     error_msg = f"[MOCK] Media file not found: {resolved_path} (original: {media_asset.path})"
                     logger.error(error_msg)
                     media_upload_errors.append(error_msg)
+
+            # Clean up temp file if we created one from DB
+            if temp_file_path and os.path.exists(temp_file_path):
+                try:
+                    os.unlink(temp_file_path)
+                except Exception:
+                    pass
 
         # Log summary
         if media_upload_errors:

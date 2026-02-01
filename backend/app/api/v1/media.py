@@ -90,6 +90,10 @@ async def upload_media(
     campaign_service = get_campaign_service()
 
     try:
+        # Read file bytes BEFORE saving (UploadFile can only be read once)
+        file_bytes = await file.read()
+        await file.seek(0)  # Reset for save_file to read again
+
         path, original_name = await media_service.save_file(
             file, campaign_id, media_type
         )
@@ -98,6 +102,9 @@ async def upload_media(
         media_asset = await campaign_service.add_media_asset(
             db, campaign_id, media_type, path, original_name, alt_text
         )
+
+        # Store file bytes in DB (survives Render ephemeral filesystem restarts)
+        media_asset.file_data = file_bytes
 
         await db.commit()
 

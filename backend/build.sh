@@ -46,6 +46,7 @@ MIGRATIONS = {
     ],
     'media_assets': [
         ('x_media_id', 'VARCHAR(255)'),
+        ('file_data', 'BYTEA'),
     ],
 }
 
