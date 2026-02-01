@@ -272,15 +272,21 @@ async def post_draft(
             # Verify file exists on disk, if not try DB fallback
             if not os.path.exists(resolved_path):
                 logger.warning(f"Media file not on disk: {resolved_path}")
+                # Explicitly re-query media asset to ensure file_data (LargeBinary) is loaded
+                fresh_media_query = select(MediaAsset).where(MediaAsset.id == media_asset.id)
+                fresh_media_result = await db.execute(fresh_media_query)
+                fresh_media = fresh_media_result.scalar_one_or_none()
+                file_data = fresh_media.file_data if fresh_media else None
+
                 # DB fallback: restore file from file_data stored in database
-                if media_asset.file_data:
+                if file_data:
                     try:
                         ext = os.path.splitext(media_asset.path)[1] or '.jpg'
                         fd, temp_file_path = tempfile.mkstemp(suffix=ext)
                         with os.fdopen(fd, 'wb') as f:
-                            f.write(media_asset.file_data)
+                            f.write(file_data)
                         resolved_path = temp_file_path
-                        logger.info(f"Restored media from DB to temp file: {temp_file_path} ({len(media_asset.file_data)} bytes)")
+                        logger.info(f"Restored media from DB to temp file: {temp_file_path} ({len(file_data)} bytes)")
                     except Exception as e:
                         logger.error(f"Failed to restore media from DB: {e}")
                         media_upload_errors.append(f"DB restore failed: {e}")

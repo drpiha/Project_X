@@ -1,10 +1,10 @@
 from typing import Optional, List
 from datetime import datetime
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.db.models import Campaign, MediaAsset, User, Draft, PostLog
+from app.db.models import Campaign, MediaAsset, User, Draft, PostLog, Schedule, DraftMediaAsset
 from app.schemas.campaign import CampaignCreate, CampaignUpdate
 
 
@@ -102,7 +102,43 @@ class CampaignService:
         db: AsyncSession,
         campaign: Campaign
     ) -> bool:
-        """Delete a campaign and its associated data."""
+        """Delete a campaign and its associated data.
+
+        Explicitly deletes children in correct order to avoid FK constraint errors
+        with async SQLAlchemy where lazy loading is not available.
+        """
+        cid = campaign.id
+
+        # 1. DraftMediaAssets (references both drafts and media_assets)
+        await db.execute(
+            delete(DraftMediaAsset).where(
+                DraftMediaAsset.draft_id.in_(
+                    select(Draft.id).where(Draft.campaign_id == cid)
+                )
+            )
+        )
+
+        # 2. PostLogs (references drafts and campaigns)
+        await db.execute(
+            delete(PostLog).where(PostLog.campaign_id == cid)
+        )
+
+        # 3. Drafts (references campaigns and schedules)
+        await db.execute(
+            delete(Draft).where(Draft.campaign_id == cid)
+        )
+
+        # 4. MediaAssets (references campaigns)
+        await db.execute(
+            delete(MediaAsset).where(MediaAsset.campaign_id == cid)
+        )
+
+        # 5. Schedules (references campaigns)
+        await db.execute(
+            delete(Schedule).where(Schedule.campaign_id == cid)
+        )
+
+        # 6. Campaign itself
         await db.delete(campaign)
         await db.flush()
         return True

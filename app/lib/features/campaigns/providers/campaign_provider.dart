@@ -526,7 +526,7 @@ class CampaignsNotifier extends StateNotifier<CampaignsState> {
     try {
       final data = <String, dynamic>{};
       if (text != null) data['text'] = text;
-      if (scheduledFor != null) data['scheduled_for'] = scheduledFor.toIso8601String();
+      if (scheduledFor != null) data['scheduled_for'] = scheduledFor.toUtc().toIso8601String();
       if (status != null) data['status'] = status;
 
       final response = await _apiClient.put(
