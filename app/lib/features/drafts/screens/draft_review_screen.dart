@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:campaign_app/l10n/app_localizations.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../campaigns/providers/campaign_provider.dart';
@@ -26,11 +27,53 @@ class _DraftReviewScreenState extends ConsumerState<DraftReviewScreen> {
   bool _isEditing = false;
   bool _isScheduling = false;
   int? _regeneratingIndex;
+  int _campaignImageCount = 0;
 
   @override
   void initState() {
     super.initState();
     _loadDrafts();
+    _loadCampaignMediaCount();
+  }
+
+  Future<void> _loadCampaignMediaCount() async {
+    try {
+      final campaign = await ref
+          .read(campaignsProvider.notifier)
+          .getCampaign(widget.campaignId);
+      if (campaign != null && mounted) {
+        setState(() {
+          _campaignImageCount = campaign.mediaAssets.length;
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<int> _pickAndUploadImages() async {
+    final picker = ImagePicker();
+    final List<XFile> picked = await picker.pickMultiImage();
+    if (picked.isEmpty) return _campaignImageCount;
+
+    int uploaded = 0;
+    for (final image in picked) {
+      final result = await ref
+          .read(campaignsProvider.notifier)
+          .uploadMedia(widget.campaignId, image);
+      if (result != null) uploaded++;
+    }
+
+    if (uploaded > 0 && mounted) {
+      setState(() {
+        _campaignImageCount += uploaded;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$uploaded image uploaded'),
+          backgroundColor: AppTheme.successColor,
+        ),
+      );
+    }
+    return _campaignImageCount;
   }
 
   @override
@@ -204,6 +247,8 @@ class _DraftReviewScreenState extends ConsumerState<DraftReviewScreen> {
       backgroundColor: Colors.transparent,
       builder: (context) => _ScheduleBottomSheet(
         draftCount: _drafts.length,
+        campaignImageCount: _campaignImageCount,
+        onAddImages: _pickAndUploadImages,
       ),
     );
 
@@ -676,8 +721,14 @@ class _CharCountBadge extends StatelessWidget {
 /// Simplified scheduling bottom sheet
 class _ScheduleBottomSheet extends StatefulWidget {
   final int draftCount;
+  final int campaignImageCount;
+  final Future<int> Function() onAddImages;
 
-  const _ScheduleBottomSheet({required this.draftCount});
+  const _ScheduleBottomSheet({
+    required this.draftCount,
+    required this.campaignImageCount,
+    required this.onAddImages,
+  });
 
   @override
   State<_ScheduleBottomSheet> createState() => _ScheduleBottomSheetState();
@@ -688,6 +739,8 @@ class _ScheduleBottomSheetState extends State<_ScheduleBottomSheet> {
   TimeOfDay _startTime = TimeOfDay.now();
   int _tweetCount = 5;
   int _imagesPerTweet = 1;
+  late int _imageCount;
+  bool _isUploadingImages = false;
 
   // Random interval in seconds for natural posting (default 2-5 minutes)
   int _intervalMinSeconds = 120; // 2 minutes
@@ -703,6 +756,9 @@ class _ScheduleBottomSheetState extends State<_ScheduleBottomSheet> {
     _startTime = TimeOfDay(hour: now.hour, minute: now.minute);
     // Default tweet count to available drafts or 5
     _tweetCount = widget.draftCount > 0 ? widget.draftCount.clamp(1, 10) : 5;
+    _imageCount = widget.campaignImageCount;
+    // Default images per tweet to 0 if no images available
+    if (_imageCount == 0) _imagesPerTweet = 0;
   }
 
   String _formatDate(DateTime date) {
@@ -1034,9 +1090,9 @@ class _ScheduleBottomSheetState extends State<_ScheduleBottomSheet> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    for (int i = 0; i <= 4; i++)
+                    for (int i = 0; i <= min(4, max(1, _imageCount)); i++)
                       Padding(
-                        padding: EdgeInsets.only(right: i < 4 ? 4 : 0),
+                        padding: EdgeInsets.only(right: i < min(4, max(1, _imageCount)) ? 4 : 0),
                         child: ChoiceChip(
                           label: Text(i == 0 ? '-' : '$i'),
                           selected: _imagesPerTweet == i,
@@ -1053,6 +1109,69 @@ class _ScheduleBottomSheetState extends State<_ScheduleBottomSheet> {
                           padding: const EdgeInsets.symmetric(horizontal: 8),
                         ),
                       ),
+                  ],
+                ),
+              ),
+              // Image upload info & button
+              Padding(
+                padding: const EdgeInsets.only(left: 36, top: 8),
+                child: Row(
+                  children: [
+                    Text(
+                      _imageCount > 0
+                          ? '$_imageCount image available'
+                          : 'No images uploaded',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: _imageCount > 0
+                            ? AppTheme.textSecondary
+                            : AppTheme.warningColor,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    _isUploadingImages
+                        ? const SizedBox(
+                            width: 16, height: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : InkWell(
+                            onTap: () async {
+                              setState(() => _isUploadingImages = true);
+                              final newCount = await widget.onAddImages();
+                              if (mounted) {
+                                setState(() {
+                                  _imageCount = newCount;
+                                  _isUploadingImages = false;
+                                  if (_imageCount > 0 && _imagesPerTweet == 0) {
+                                    _imagesPerTweet = 1;
+                                  }
+                                });
+                              }
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppTheme.primaryColor.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: AppTheme.primaryColor.withOpacity(0.3)),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.add_photo_alternate, size: 14, color: AppTheme.primaryColor),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    _imageCount > 0 ? 'Add more' : 'Add images',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: AppTheme.primaryColor,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                   ],
                 ),
               ),
