@@ -40,9 +40,14 @@ class _CampaignDetailScreenState extends ConsumerState<CampaignDetailScreen> {
     super.dispose();
   }
 
+  int _consecutiveFailures = 0;
+
   void _startAutoRefresh() {
-    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      _loadCampaignDetail(silent: true);
+    _refreshTimer = Timer.periodic(const Duration(seconds: 60), (_) {
+      // Stop auto-refresh after 3 consecutive failures (backend likely sleeping)
+      if (_consecutiveFailures < 3) {
+        _loadCampaignDetail(silent: true);
+      }
     });
   }
 
@@ -57,17 +62,22 @@ class _CampaignDetailScreenState extends ConsumerState<CampaignDetailScreen> {
     try {
       final detail = await ref.read(campaignsProvider.notifier).getCampaignDetail(widget.campaignId);
       if (mounted) {
+        _consecutiveFailures = 0;
         setState(() {
           _campaignDetail = detail;
           _isLoading = false;
         });
       }
     } catch (e) {
+      _consecutiveFailures++;
       if (mounted) {
-        setState(() {
-          _error = e.toString();
-          _isLoading = false;
-        });
+        // On silent refresh, don't overwrite existing data with error
+        if (!silent || _campaignDetail == null) {
+          setState(() {
+            _error = e.toString();
+            _isLoading = false;
+          });
+        }
       }
     }
   }

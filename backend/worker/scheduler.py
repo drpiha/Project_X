@@ -409,10 +409,17 @@ async def post_draft(
                     logger.error(f"Posting error: {e}")
 
     # Update draft status
+    rate_limited = "rate limit" in (message or "").lower() or "429" in (message or "")
+
     if success:
         draft.status = "posted"
         draft.x_post_id = tweet_id
         draft.posted_at = datetime.utcnow()
+    elif rate_limited:
+        # Keep as pending so scheduler retries on next cycle
+        draft.status = "pending"
+        draft.last_error = message
+        logger.info(f"Draft {draft.id} kept as pending for retry (rate limited)")
     else:
         draft.status = "failed"
         draft.last_error = message

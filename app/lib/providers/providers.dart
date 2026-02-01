@@ -94,15 +94,22 @@ class UserNotifier extends StateNotifier<UserState> {
     final prefs = await SharedPreferences.getInstance();
     final savedUserId = prefs.getString('user_id');
     final savedLocale = prefs.getString('locale_override');
-    
+
     if (savedUserId != null) {
       _apiClient.setUserId(savedUserId);
+
+      // Restore cached X connection state immediately (before network call)
+      final cachedXConnected = prefs.getBool('is_x_connected') ?? false;
+      final cachedXUsername = prefs.getString('x_username');
+
       state = state.copyWith(
         userId: savedUserId,
         locale: savedLocale,
+        isConnectedToX: cachedXConnected,
+        xUsername: cachedXUsername,
       );
-      
-      // Refresh from server
+
+      // Refresh from server (updates cached values if successful)
       await fetchSettings();
     }
   }
@@ -114,18 +121,30 @@ class UserNotifier extends StateNotifier<UserState> {
       final response = await _apiClient.get(AppConfig.settings);
       final data = response.data as Map<String, dynamic>;
 
+      final isXConnected = data['is_x_connected'] as bool? ?? false;
+      final xUsername = data['x_username'] as String?;
+
       state = state.copyWith(
         locale: data['ui_language_override'] as String?,
         autoPostEnabled: data['auto_post_enabled'] as bool? ?? false,
         dailyLimit: data['daily_post_limit'] as int? ?? 10,
-        isConnectedToX: data['is_x_connected'] as bool? ?? false,
-        xUsername: data['x_username'] as String?,
+        isConnectedToX: isXConnected,
+        xUsername: xUsername,
         defaultTone: data['default_tone'] as String? ?? 'informative',
         defaultTweetLanguage: data['default_tweet_language'] as String? ?? 'tr',
         defaultImagesPerTweet: data['default_images_per_tweet'] as int? ?? 1,
       );
+
+      // Cache X connection state for offline/startup use
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('is_x_connected', isXConnected);
+      if (xUsername != null) {
+        await prefs.setString('x_username', xUsername);
+      } else {
+        await prefs.remove('x_username');
+      }
     } catch (e) {
-      // Ignore errors
+      // Keep cached state - don't reset isConnectedToX on network failure
     }
   }
 

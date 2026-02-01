@@ -184,9 +184,35 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen>
                           ],
                         ),
                         child: ElevatedButton.icon(
-                          onPressed: _isLoading ? null : () {
-                            // TODO: Implement X OAuth
-                            _createUserAndContinue();
+                          onPressed: _isLoading ? null : () async {
+                            setState(() => _isLoading = true);
+                            try {
+                              // Only create user if none exists (avoid orphaning X account)
+                              final currentUser = ref.read(userProvider);
+                              if (currentUser.userId == null) {
+                                final locale = Localizations.localeOf(context).languageCode;
+                                await ref.read(userProvider.notifier).createAnonymousUser(locale);
+                              }
+
+                              // Navigate to campaigns first
+                              if (mounted) {
+                                context.go('/campaigns');
+                              }
+
+                              // Then initiate X Connection (will open browser)
+                              await ref.read(userProvider.notifier).connectX();
+                            } catch (e) {
+                              // Don't show error for OAuth timeout - user may still complete it
+                              if (mounted && !e.toString().contains('timeout')) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Error: ${e.toString()}')),
+                                );
+                              }
+                            } finally {
+                              if (mounted) {
+                                setState(() => _isLoading = false);
+                              }
+                            }
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.transparent,
